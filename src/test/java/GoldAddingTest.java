@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -82,13 +82,11 @@ public class GoldAddingTest {
     }
 
     @Test
-    public void concurrentGoldAdditionToDifferentClans() throws ExecutionException, InterruptedException, SQLException {
-        Connection connection = DBConnector.getConnection();
+    public void concurrentGoldAdditionToDifferentClans() throws ExecutionException, InterruptedException {
         int n_clans = 100;
         for (int i = 3; i < n_clans + 3; i++) {
-            PreparedStatement stm = connection.prepareStatement("INSERT INTO clan VALUES (?, 0, 'name')");
-            stm.setLong(1, i);
-            stm.execute();
+            ResultSet res = DBConnector.runQuery("INSERT INTO clan VALUES (?, 0, 'name')", i);
+            assertNotNull(res);
         }
         long start = System.currentTimeMillis();
         int n_iterations = 1000;

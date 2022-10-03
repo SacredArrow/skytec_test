@@ -1,13 +1,15 @@
 package org.game;
 
+import org.apache.log4j.Logger;
 import org.db.DBConnector;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Supplier;
 
 public class User implements IMoneyHolder {
+
+    final static Logger logger = Logger.getLogger(User.class);
     private final long id;
     public User(long userId) {
         this.id = userId;
@@ -15,14 +17,12 @@ public class User implements IMoneyHolder {
 
     @Override
     public int getBalance() {
-        Connection connection = DBConnector.getConnection();
         try {
-            PreparedStatement stm = connection.prepareStatement("SELECT balance from users WHERE user_id = ?");
-            stm.setLong(1, this.id);
-            stm.execute();
-            stm.getResultSet().first();
-            return stm.getResultSet().getInt("balance");
+            ResultSet rs = DBConnector.runQuery("SELECT balance from users WHERE user_id = ?", this.id);
+            rs.first();
+            return rs.getInt("balance");
         } catch (SQLException e) {
+            logger.error("Couldn't get balance for user " + id);
             throw new RuntimeException(e);
         }
     }

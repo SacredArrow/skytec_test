@@ -3,8 +3,7 @@ package org.game;
 import org.apache.log4j.Logger;
 import org.db.DBConnector;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,30 +33,19 @@ public class Clan implements IMoneyHolder{
 
     @Override
     public int getBalance() {
-        Connection connection = DBConnector.getConnection();
         try {
-            PreparedStatement stm = connection.prepareStatement("SELECT balance from clan WHERE clan_id = ?");
-            stm.setLong(1, this.id);
-            stm.execute();
-            stm.getResultSet().first();
-            return stm.getResultSet().getInt("balance");
+            ResultSet rs = DBConnector.runQuery("SELECT balance from clan WHERE clan_id = ?", this.id);
+            rs.first();
+            return rs.getInt("balance");
         } catch (SQLException e) {
+            logger.error("Couldn't get balance for clan " + id);
             throw new RuntimeException(e);
         }
     }
 
     private boolean runAddGoldQuery(int amount) {
-        Connection connection = DBConnector.getConnection();
-        try {
-            PreparedStatement stm = connection.prepareStatement("UPDATE clan SET balance = balance + ? WHERE clan_id = ?");
-            stm.setInt(1, amount);
-            stm.setLong(2, this.id);
-            stm.execute();
-            return true;
-        } catch (SQLException e) {
-            logger.error(e);
-            return false;
-        }
+        ResultSet rs = DBConnector.runQuery("UPDATE clan SET balance = balance + ? WHERE clan_id = ?", amount, this.id);
+        return rs != null;
     }
 
     public long getId() {

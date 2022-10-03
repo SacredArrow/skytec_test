@@ -5,7 +5,6 @@ import org.db.DBConnector;
 import org.game.User;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class UserAddGoldService {
@@ -21,20 +20,14 @@ public class UserAddGoldService {
                               SET balance = balance + ?
                               WHERE clan_id = ?
                         """;
-                PreparedStatement stm = connection.prepareStatement(query1);
-                stm.setInt(1, gold);
-                stm.setLong(2, clanId);
-                stm.executeUpdate();
+                DBConnector.runQuery(query1, gold, clanId);
 
                 String query2 = """
                               UPDATE users
                               SET balance = balance - ?
                               WHERE user_id = ?
                               """;
-                PreparedStatement stm2 = connection.prepareStatement(query2);
-                stm2.setInt(1, gold);
-                stm2.setLong(2, user.getId());
-                stm2.executeUpdate();
+                DBConnector.runQuery(query2, gold, user.getId());
                 connection.commit();
                 return true;
             } catch (SQLException e) {
@@ -42,6 +35,7 @@ public class UserAddGoldService {
                 try {
                     connection.rollback();
                 } catch (SQLException ex) {
+                    logger.error("Rollback failure!");
                     throw new RuntimeException(ex);
                 }
                 return false;
@@ -49,6 +43,7 @@ public class UserAddGoldService {
                 try {
                     connection.setAutoCommit(true);
                 } catch (SQLException e) {
+                    logger.error("Auto-commit enablement error!");
                     throw new RuntimeException(e);
                 }
             }

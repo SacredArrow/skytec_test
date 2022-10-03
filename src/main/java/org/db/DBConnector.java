@@ -2,10 +2,9 @@ package org.db;
 
 
 import org.apache.log4j.Logger;
+import org.h2.tools.SimpleResultSet;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class DBConnector {
 
@@ -39,5 +38,47 @@ public class DBConnector {
 
         }
         return connection;
+    }
+
+    public static ResultSet runQuery(String query, Object ... parameters) {
+        PreparedStatement st;
+        try {
+            st = getConnection().prepareStatement(query);
+            for (int i = 0; i < parameters.length; i++) {
+                Object parameter = parameters[i];
+                if (parameter instanceof Long) {
+                    st.setLong(i + 1, (Long) parameter);
+                } else if (parameter instanceof Integer) {
+                    st.setInt(i + 1, (Integer) parameter);
+                } else {
+                    logger.error("Unsupported type parameter for query: " + parameter.getClass());
+                    return null;
+                }
+            }
+            boolean hasResultSet = st.execute();
+            if (hasResultSet) {
+                return st.getResultSet(); // It isn't update statement
+            } else if (st.getUpdateCount() > -1) {
+                return new SimpleResultSet(); // It is update statement and it finished correctly
+            } else {
+                return null; // There was an error
+            }
+
+        } catch (SQLException e) {
+            logger.error(e);
+            return null;
+        }
+    }
+
+    /**
+     * Should only be called on fresh set, since H2 doesn't support scrolling.
+     * This method changes position of cursor, so be careful if you want to use ResultSet later.
+     */
+    public static boolean isNotEmpty(ResultSet rs) {
+        try {
+            return rs.next(); // Returns false if there is no first row
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
